@@ -1,0 +1,24 @@
+# Visual Studio output
+bin/
+obj/
+Debug/
+Release/
+x64/
+*.obj
+*.pdb
+*.ilk
+*.exe
+*.log
+
+# Claude Code local settings
+.claude/
+
+# VS user files
+.vs/
+*.vcxproj.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
