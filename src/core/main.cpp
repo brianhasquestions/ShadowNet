@@ -18,6 +18,7 @@
 #include "../resource.h"
 #include "../ui/colors.h"
 #include "../ui/ui.h"
+#include "../ui/hacker_stage.h"
 #include "../data/strings.h"
 #include "../windows/irc_window.h"
 #include "../windows/boss_window.h"
@@ -57,10 +58,12 @@ static constexpr int kSpiderLegCycleRate = 3; // change legs every N ticks
 
 // Mini overlay (shown when minimized)
 static HWND g_OverlayWnd = NULL;
-static constexpr int kOverlayWidth = 220;
-static constexpr int kOverlayHeight = 60;
+static constexpr int kOverlayWidth = 370;                                         // wide enough for the stage caption
+static constexpr int kOverlayBarsHeight = 60;                                     // jobs / skill bars
+static constexpr int kOverlayHeight = STAGE_COMPACT_HEIGHT + kOverlayBarsHeight;   // compact hacker stage on top
 static constexpr UINT_PTR TIMER_OVERLAY = 10;
-static constexpr int kOverlayRenderMs = 250;
+static constexpr int kOverlayRenderMs = 100;
+static constexpr int kSpiderMaxSpawnDelayMs = 5 * 60 * 1000;                      // spider shows up within 5 minutes
 
 // Taskbar progress
 static ITaskbarList3* g_pTaskbar = nullptr;
@@ -142,9 +145,9 @@ static void RenderFrame(HWND hWnd)
     DrawStatusBar(DrawCtx{ g_MemDC, &g_Fonts }, &g_GameState, WindowSize{ w, h });
 
     int panelX = SIDEBAR_WIDTH;
-    int panelY = 0;
+    int panelY = STAGE_HEIGHT;
     int panelW = w - SIDEBAR_WIDTH;
-    int panelH = h - STATUSBAR_HEIGHT;
+    int panelH = h - STATUSBAR_HEIGHT - STAGE_HEIGHT;
 
     switch (g_GameState.currentTab)
     {
@@ -175,6 +178,9 @@ static void RenderFrame(HWND hWnd)
         default:
             break;
     }
+
+    // Drawn after the panel so scrolled content never bleeds into the strip
+    DrawHackerStage(DrawCtx{ g_MemDC, &g_Fonts }, &g_GameState, PanelRect{ panelX, 0, panelW, STAGE_HEIGHT });
 
     DrawToasts(DrawCtx{ g_MemDC, &g_Fonts }, &g_GameState, WindowSize{ w, h });
 
@@ -617,13 +623,21 @@ static void UpdateTaskbarProgress()
 static void RenderOverlay(HWND hWnd)
 {
     PAINTSTRUCT ps;
-    HDC hdc = BeginPaint(hWnd, &ps);
+    HDC winDC = BeginPaint(hWnd, &ps);
+
+    // Draw into a memory bitmap and blit once, so the animation does not flicker
+    HDC hdc = CreateCompatibleDC(winDC);
+    HBITMAP bmp = CreateCompatibleBitmap(winDC, kOverlayWidth, kOverlayHeight);
+    HBITMAP oldBmp = static_cast<HBITMAP>(SelectObject(hdc, bmp));
 
     // Background
     RECT rc = {0, 0, kOverlayWidth, kOverlayHeight};
     HBRUSH bgBrush = CreateSolidBrush(Colors::BackgroundPrimary);
     FillRect(hdc, &rc, bgBrush);
     DeleteObject(bgBrush);
+
+    // Compact hacker stage on top, bars beneath
+    DrawHackerStageCompact(DrawCtx{ hdc, &g_Fonts }, &g_GameState, PanelRect{ 0, 0, kOverlayWidth, STAGE_COMPACT_HEIGHT });
 
     // Border
     HPEN pen = CreatePen(PS_SOLID, 1, Colors::Comment);
@@ -637,9 +651,14 @@ static void RenderOverlay(HWND hWnd)
     SetBkMode(hdc, TRANSPARENT);
 
     constexpr int kBarX = 50;
-    constexpr int kBarWidth = 160;
+    constexpr int kBarRightMargin = 10;
+    constexpr int kBarWidth = kOverlayWidth - kBarX - kBarRightMargin;
     constexpr int kBarHeight = 10;
     constexpr int kLabelX = 6;
+    constexpr int kJobsLabelY = STAGE_COMPACT_HEIGHT + 7;
+    constexpr int kJobsBarY = STAGE_COMPACT_HEIGHT + 9;
+    constexpr int kSkillLabelY = STAGE_COMPACT_HEIGHT + 32;
+    constexpr int kSkillBarY = STAGE_COMPACT_HEIGHT + 34;
 
     // Jobs progress bar
     int activeCount = GetActiveJobCount(&g_GameState);
@@ -648,10 +667,10 @@ static void RenderOverlay(HWND hWnd)
     HFONT oldFont = static_cast<HFONT>(SelectObject(hdc, font));
 
     SetTextColor(hdc, Colors::Cyan);
-    TextOutW(hdc, kLabelX, 7, L"Jobs", 4);
+    TextOutW(hdc, kLabelX, kJobsLabelY, L"Jobs", 4);
 
     // Jobs bar background
-    RECT barBg = {kBarX, 9, kBarX + kBarWidth, 9 + kBarHeight};
+    RECT barBg = {kBarX, kJobsBarY, kBarX + kBarWidth, kJobsBarY + kBarHeight};
     HBRUSH barBgBrush = CreateSolidBrush(Colors::BackgroundSecondary);
     FillRect(hdc, &barBg, barBgBrush);
     DeleteObject(barBgBrush);
@@ -673,7 +692,7 @@ static void RenderOverlay(HWND hWnd)
         }
         float avg = totalProgress / static_cast<float>(activeCount);
         int fillW = static_cast<int>(kBarWidth * avg);
-        RECT barFill = {kBarX, 9, kBarX + fillW, 9 + kBarHeight};
+        RECT barFill = {kBarX, kJobsBarY, kBarX + fillW, kJobsBarY + kBarHeight};
         HBRUSH fillBrush = CreateSolidBrush(Colors::Cyan);
         FillRect(hdc, &barFill, fillBrush);
         DeleteObject(fillBrush);
@@ -681,9 +700,9 @@ static void RenderOverlay(HWND hWnd)
 
     // Skill progress bar
     SetTextColor(hdc, Colors::Purple);
-    TextOutW(hdc, kLabelX, 32, L"Skill", 5);
+    TextOutW(hdc, kLabelX, kSkillLabelY, L"Skill", 5);
 
-    RECT skillBg = {kBarX, 34, kBarX + kBarWidth, 34 + kBarHeight};
+    RECT skillBg = {kBarX, kSkillBarY, kBarX + kBarWidth, kSkillBarY + kBarHeight};
     HBRUSH skillBgBrush = CreateSolidBrush(Colors::BackgroundSecondary);
     FillRect(hdc, &skillBg, skillBgBrush);
     DeleteObject(skillBgBrush);
@@ -694,7 +713,7 @@ static void RenderOverlay(HWND hWnd)
         if (studyProgress < 0.0f) studyProgress = 0.0f;
         if (studyProgress > 1.0f) studyProgress = 1.0f;
         int fillW = static_cast<int>(kBarWidth * studyProgress);
-        RECT skillFill = {kBarX, 34, kBarX + fillW, 34 + kBarHeight};
+        RECT skillFill = {kBarX, kSkillBarY, kBarX + fillW, kSkillBarY + kBarHeight};
         HBRUSH fillBrush = CreateSolidBrush(Colors::Purple);
         FillRect(hdc, &skillFill, fillBrush);
         DeleteObject(fillBrush);
@@ -702,6 +721,11 @@ static void RenderOverlay(HWND hWnd)
 
     SelectObject(hdc, oldFont);
     DeleteObject(font);
+
+    BitBlt(winDC, 0, 0, kOverlayWidth, kOverlayHeight, hdc, 0, 0, SRCCOPY);
+    SelectObject(hdc, oldBmp);
+    DeleteObject(bmp);
+    DeleteDC(hdc);
 
     EndPaint(hWnd, &ps);
 }
@@ -816,6 +840,7 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             }
             else if (TIMER_RENDER == wParam)
             {
+                HackerStageUpdate(&g_GameState, kRenderIntervalMs);
                 RenderFrame(hWnd);
                 UpdateTaskbarProgress();
             }
@@ -848,9 +873,9 @@ static LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lPara
             if (SIZE_MINIMIZED == wParam)
             {
                 ShowOverlay();
-                // Schedule spider to appear at a random time within 5 minutes
-                // Overlay timer ticks at kOverlayRenderMs (250ms), so 5 min = 1200 ticks
-                g_SpiderSpawnDelay = GameRandomRange(&g_GameState, 1, 1200);
+                // Schedule spider to appear at a random time within 5 minutes,
+                // counted in overlay timer ticks
+                g_SpiderSpawnDelay = GameRandomRange(&g_GameState, 1, kSpiderMaxSpawnDelayMs / kOverlayRenderMs);
                 g_SpiderSpawnPending = true;
             }
             else

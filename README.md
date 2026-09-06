@@ -59,6 +59,8 @@ src\
              jail_window      Full-screen lockout while seized by the feds
              melt_window      Full-screen glitch / matrix "you got hacked" effect
   ui\        ui.cpp/.h       All tab rendering, layout, click handling, colors.h palette
+             hacker_stage    Animated pixel-art hacker strip above the panel and in the
+                             minimized overlay; reacts to jobs, paydays, heat, raids, jail
   data\      strings.cpp/.h  Hacker handles, IRC line pools, intel item definitions
 ```
 
@@ -103,6 +105,8 @@ The game holds everything in a single flat `GameState` struct (see `src/core/gam
 **Jail.** Being seized locks you out for a real-world day (two days for a contractor burn). The full-screen jail window counts down; offline time counts against the sentence.
 
 **Screen melt.** When a scorned scammer or a disloyal crew member turns on you, the whole screen glitches, melts, and rains matrix code with the attacker's handle. Pure spectacle, no lasting mechanical penalty beyond the heat and reputation hit that triggered it.
+
+**Hacker stage.** A pixel-art strip above the gameplay panel shows your hacker at their desk: head bobbing, typing while jobs run, reading while studying docs, fist-pumping on a payday, recoiling from raids and investigations, and hands-up when seized. Heat adds sweat drops and, near the top, a siren pulse. While enlisted the scene swaps to a windowless military cubicle in uniform. The same scene appears at half size in the minimized overlay. It only observes game state; nothing about it is saved.
 
 **Prestige.** Once you clear the endgame requirements (10,000 reputation, 5 million cash, and five Tier 1 jobs completed) you can prestige: you keep a permanent bonus, wipe your progress, and switch into legitimate-consultancy mode with a parallel catalog of white-hat jobs.
 

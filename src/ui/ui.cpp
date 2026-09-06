@@ -2531,16 +2531,22 @@ HitResult HitTest(const GameState* gs, POINT mouse, WindowSize ws)
         return result;
     }
 
+    // Clicks on the hacker stage strip do nothing
+    if (mouseY < STAGE_HEIGHT)
+    {
+        return result;
+    }
+
     int panelX = SIDEBAR_WIDTH;
-    int panelY = 0;
+    int panelY = STAGE_HEIGHT;
     int panelW = windowWidth - SIDEBAR_WIDTH;
-    int panelH = windowHeight - STATUSBAR_HEIGHT;
+    int panelH = windowHeight - STATUSBAR_HEIGHT - STAGE_HEIGHT;
 
     // Dashboard panel hit testing
     if (Tab::Dashboard == gs->currentTab)
     {
         int cx = panelX + PADDING;
-        int resetY = panelH - kResetButtonBottomOffset;
+        int resetY = panelY + panelH - kResetButtonBottomOffset;
         if (mouseX >= cx + kResetButtonIndent && mouseX < cx + kResetButtonIndent + kResetButtonWidth && mouseY >= resetY && mouseY < resetY + kResetButtonHeight)
         {
             result.type = HitResult::ResetSave;

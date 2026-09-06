@@ -78,6 +78,9 @@
     <ClCompile Include="src\ui\ui.cpp">
       <Filter>Source Files\UI</Filter>
     </ClCompile>
+    <ClCompile Include="src\ui\hacker_stage.cpp">
+      <Filter>Source Files\UI</Filter>
+    </ClCompile>
     <ClCompile Include="src\data\strings.cpp">
       <Filter>Source Files\Data</Filter>
     </ClCompile>
@@ -104,6 +107,9 @@
       <Filter>Header Files\UI</Filter>
     </ClInclude>
     <ClInclude Include="src\ui\ui.h">
+      <Filter>Header Files\UI</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ui\hacker_stage.h">
       <Filter>Header Files\UI</Filter>
     </ClInclude>
     <ClInclude Include="src\data\strings.h">

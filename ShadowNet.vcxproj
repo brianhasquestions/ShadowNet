@@ -111,6 +111,7 @@
     <ClCompile Include="src\systems\events.cpp" />
     <ClCompile Include="src\systems\offline.cpp" />
     <ClCompile Include="src\ui\ui.cpp" />
+    <ClCompile Include="src\ui\hacker_stage.cpp" />
     <ClCompile Include="src\data\strings.cpp" />
     <ClCompile Include="src\windows\irc_window.cpp" />
     <ClCompile Include="src\windows\boss_window.cpp" />
@@ -123,6 +124,7 @@
     <ClInclude Include="src\core\game.h" />
     <ClInclude Include="src\ui\colors.h" />
     <ClInclude Include="src\ui\ui.h" />
+    <ClInclude Include="src\ui\hacker_stage.h" />
     <ClInclude Include="src\data\strings.h" />
     <ClInclude Include="src\systems\actions.h" />
     <ClInclude Include="src\systems\skills.h" />

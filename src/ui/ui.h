@@ -8,6 +8,7 @@
 constexpr int SIDEBAR_WIDTH = 160;
 constexpr int STATUSBAR_HEIGHT = 32;
 constexpr int TAB_HEIGHT = 36;
+constexpr int STAGE_HEIGHT = 120;      // animated hacker stage strip above the panel
 constexpr int PADDING = 8;
 constexpr int LINE_HEIGHT = 20;
 constexpr int CARD_PADDING = 12;
