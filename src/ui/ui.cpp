@@ -253,7 +253,7 @@ void DrawSidebar(const DrawCtx& ctx, const GameState* gs, int windowHeight)
 
     // Title
     DrawTextLine(ctx.hdc, TextParams{ctx.fonts->uiBoldFont, L"SHADOWNET", Colors::Green}, POINT{kTitleX, kTitleY});
-    DrawTextLine(ctx.hdc, TextParams{ctx.fonts->smallFont, L"v1.0", Colors::Comment}, POINT{kVersionX, kVersionY});
+    DrawTextLine(ctx.hdc, TextParams{ctx.fonts->smallFont, L"v1.1", Colors::Comment}, POINT{kVersionX, kVersionY});
 
     // Separator
     DrawFilledRect(ctx.hdc, RECT{kSidebarPadding, kSeparatorY, SIDEBAR_WIDTH - kSidebarPadding, kSeparatorY + 1}, Colors::Comment);
